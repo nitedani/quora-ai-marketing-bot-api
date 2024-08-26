@@ -95,6 +95,12 @@ def post_answer(post_url):
             page.goto(post_url)
             page.wait_for_load_state('domcontentloaded')
 
+            try:
+                logger.info("Attempting to accept cookies")
+                page.click('button[id="onetrust-accept-btn-handler"]')
+            except:
+                logger.warning("Cookie acceptance button not found or already accepted")
+
             logger.info("Clicking answer button")
             response = page.query_elements(ANSWER_BUTTON_QUERY)
             if response.answer_button:
