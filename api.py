@@ -15,7 +15,7 @@ app = Flask(__name__)
 EMAIL= os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
-IS_RENDER = os.getenv('RENDER')
+IS_RENDER = True if os.getenv('RENDER') else False
 STATE_PATH = '/etc/secrets/quora_login.json' if IS_RENDER else 'quora_login.json'
 
 
@@ -86,7 +86,7 @@ def api_post_answer():
 def post_answer(post_url):
     logger.info(f"Attempting to post answer to {post_url}")
     try:
-        with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
+        with sync_playwright() as playwright, playwright.chromium.launch(headless=IS_RENDER) as browser:
             logger.info("Loading saved session state")
             context = browser.new_context(storage_state=STATE_PATH)
             page = agentql.wrap(context.new_page())
@@ -129,7 +129,7 @@ def post_answer(post_url):
 
 def save_signed_in_state():
     logger.info("Saving signed-in state")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=IS_RENDER) as browser:
         page = agentql.wrap(browser.new_page())
         logger.info("Navigating to Quora login page")
         page.goto("https://www.quora.com/")
@@ -161,7 +161,7 @@ def save_signed_in_state():
 
 def load_signed_in_state_and_fetch_data(url):
     logger.info(f"Loading signed-in state and fetching data from {url}")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=IS_RENDER) as browser:
         context = browser.new_context(storage_state=STATE_PATH)
         page = agentql.wrap(context.new_page())
         logger.info(f"Navigating to {url}")
