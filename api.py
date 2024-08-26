@@ -46,6 +46,10 @@ POST_BUTTON_QUERY = """
 }
 """
 
+def remove_onetrust_el(page):
+    # remove #onetrust-consent-sdk from document
+    page.evaluate('document.querySelector("#onetrust-consent-sdk")?.remove()')
+
 @app.route('/fetch_questions', methods=['POST'])
 def fetch_questions():
     logger.info("Received request to fetch questions")
@@ -114,7 +118,7 @@ def post_answer(post_url):
             page.fill('.doc.empty', 'Automation will lose a lot of jobs')
             logger.info("Clicking post button")
             response = page.query_elements(POST_BUTTON_QUERY)
-            remove_onetrust_el()
+            remove_onetrust_el(page)
             if response.post_button:
                 response.post_button.click()
                 logger.info("Post button clicked successfully")
@@ -199,6 +203,3 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0', port=PORT)
 
 
-def remove_onetrust_el(page):
-    # remove #onetrust-consent-sdk from document
-    page.evaluate('document.querySelector("#onetrust-consent-sdk")?.remove()')
