@@ -6,7 +6,6 @@ import time
 import agentql
 from playwright.sync_api import sync_playwright
 import logging
-import yaml
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 EMAIL= os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
-PLAYWRIGHT_STATE = yaml.safe_load(os.getenv("PLAYWRIGHT_STATE"))
+
 # Define the AgentQL queries (unchanged)
 LOGIN_BUTTON_QUERY = """
 {
@@ -88,7 +87,7 @@ def post_answer(post_url):
     try:
         with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
             logger.info("Loading saved session state")
-            context = browser.new_context(storage_state=PLAYWRIGHT_STATE)
+            context = browser.new_context(storage_state="quora_login.json")
             page = agentql.wrap(context.new_page())
 
             logger.info(f"Navigating to {post_url}")
@@ -129,7 +128,7 @@ def post_answer(post_url):
 
 def save_signed_in_state():
     logger.info("Saving signed-in state")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
         page = agentql.wrap(browser.new_page())
         logger.info("Navigating to Quora login page")
         page.goto("https://www.quora.com/")
@@ -171,8 +170,8 @@ def save_signed_in_state():
 
 def load_signed_in_state_and_fetch_data(url):
     logger.info(f"Loading signed-in state and fetching data from {url}")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
-        context = browser.new_context(storage_state=PLAYWRIGHT_STATE)
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
+        context = browser.new_context(storage_state="quora_login.json")
         page = agentql.wrap(context.new_page())
         logger.info(f"Navigating to {url}")
         page.goto(url)
@@ -198,6 +197,6 @@ PORT = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     logger.info("Starting application")
     logger.info("Saving initial signed-in state")
-    # save_signed_in_state()
+    save_signed_in_state()
     logger.info(f"Starting Flask server on port {PORT}")
     app.run(host='0.0.0.0', port=PORT)
