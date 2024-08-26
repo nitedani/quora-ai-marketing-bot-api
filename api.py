@@ -73,9 +73,6 @@ def api_post_answer():
         logger.error("postURL is missing in the request")
         return jsonify({"success": False, "message": "postURL is required"}), 400
 
-    logger.info("Saving signed-in state")
-    save_signed_in_state()
-
     logger.info(f"Posting answer to URL: {post_url}")
     success = post_answer(post_url)
     
