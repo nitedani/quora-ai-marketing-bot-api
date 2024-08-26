@@ -6,8 +6,7 @@ import time
 import agentql
 from playwright.sync_api import sync_playwright
 import logging
-import json
-
+import yaml
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -16,8 +15,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 EMAIL= os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
-PLAYWRIGHT_STATE = json.loads(os.getenv("PLAYWRIGHT_STATE"))
-
+PLAYWRIGHT_STATE = yaml.safe_load(os.getenv("PLAYWRIGHT_STATE"))
 # Define the AgentQL queries (unchanged)
 LOGIN_BUTTON_QUERY = """
 {
