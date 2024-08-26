@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import time
+import os
 import agentql
 from playwright.sync_api import sync_playwright
 
