@@ -6,6 +6,8 @@ import time
 import agentql
 from playwright.sync_api import sync_playwright
 import logging
+import json
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -14,6 +16,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 EMAIL= os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
+PLAYWRIGHT_STATE = json.loads(os.getenv("PLAYWRIGHT_STATE"))
 
 # Define the AgentQL queries (unchanged)
 LOGIN_BUTTON_QUERY = """
@@ -87,7 +90,7 @@ def post_answer(post_url):
     try:
         with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
             logger.info("Loading saved session state")
-            context = browser.new_context(storage_state="quora_login.json")
+            context = browser.new_context(storage_state=PLAYWRIGHT_STATE)
             page = agentql.wrap(context.new_page())
 
             logger.info(f"Navigating to {post_url}")
@@ -128,14 +131,14 @@ def post_answer(post_url):
 
 def save_signed_in_state():
     logger.info("Saving signed-in state")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
         page = agentql.wrap(browser.new_page())
         logger.info("Navigating to Quora login page")
         page.goto("https://www.quora.com/")
         page.wait_for_load_state('domcontentloaded')
         try:
             logger.info("Attempting to accept cookies")
-            page.click('#onetrust-accept-btn-handler')
+            page.click('button[id="onetrust-accept-btn-handler"]')
         except:
             logger.warning("Cookie acceptance button not found or already accepted")
 
@@ -143,6 +146,16 @@ def save_signed_in_state():
         page.fill('input[name="email"]', EMAIL)
         page.fill('input[name="password"]', PASSWORD)
         time.sleep(2)
+
+
+        captcha = page.query_selector('div[id="rc-anchor-container"]')
+        if captcha:
+            logger.info("Captcha detected. Skipping login")
+            logger.info("Closing browser")
+            browser.close()
+            return
+
+
 
         logger.info("Clicking login button")
         response = page.query_elements(LOGIN_BUTTON_QUERY)
@@ -160,8 +173,8 @@ def save_signed_in_state():
 
 def load_signed_in_state_and_fetch_data(url):
     logger.info(f"Loading signed-in state and fetching data from {url}")
-    with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
-        context = browser.new_context(storage_state="quora_login.json")
+    with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
+        context = browser.new_context(storage_state=PLAYWRIGHT_STATE)
         page = agentql.wrap(context.new_page())
         logger.info(f"Navigating to {url}")
         page.goto(url)
@@ -187,6 +200,6 @@ PORT = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     logger.info("Starting application")
     logger.info("Saving initial signed-in state")
-    save_signed_in_state()
+    # save_signed_in_state()
     logger.info(f"Starting Flask server on port {PORT}")
     app.run(host='0.0.0.0', port=PORT)
