@@ -15,6 +15,10 @@ app = Flask(__name__)
 EMAIL= os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
+IS_RENDER = os.getenv('RENDER')
+STATE_PATH = '/etc/secrets/quora_login.json' if IS_RENDER else 'quora_login.json'
+
+
 # Define the AgentQL queries (unchanged)
 LOGIN_BUTTON_QUERY = """
 {
@@ -87,7 +91,7 @@ def post_answer(post_url):
     try:
         with sync_playwright() as playwright, playwright.chromium.launch(headless=False) as browser:
             logger.info("Loading saved session state")
-            context = browser.new_context(storage_state="quora_login.json")
+            context = browser.new_context(storage_state=STATE_PATH)
             page = agentql.wrap(context.new_page())
 
             logger.info(f"Navigating to {post_url}")
@@ -144,16 +148,6 @@ def save_signed_in_state():
         page.fill('input[name="password"]', PASSWORD)
         time.sleep(2)
 
-
-        captcha = page.query_selector('div[id="rc-anchor-container"]')
-        if captcha:
-            logger.info("Captcha detected. Skipping login")
-            logger.info("Closing browser")
-            browser.close()
-            return
-
-
-
         logger.info("Clicking login button")
         response = page.query_elements(LOGIN_BUTTON_QUERY)
 
@@ -171,7 +165,7 @@ def save_signed_in_state():
 def load_signed_in_state_and_fetch_data(url):
     logger.info(f"Loading signed-in state and fetching data from {url}")
     with sync_playwright() as playwright, playwright.chromium.launch(headless=True) as browser:
-        context = browser.new_context(storage_state="quora_login.json")
+        context = browser.new_context(storage_state=STATE_PATH)
         page = agentql.wrap(context.new_page())
         logger.info(f"Navigating to {url}")
         page.goto(url)
@@ -197,6 +191,6 @@ PORT = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     logger.info("Starting application")
     logger.info("Saving initial signed-in state")
-    save_signed_in_state()
+    # save_signed_in_state()
     logger.info(f"Starting Flask server on port {PORT}")
     app.run(host='0.0.0.0', port=PORT)

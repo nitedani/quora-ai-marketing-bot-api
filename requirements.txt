@@ -2,4 +2,3 @@ playwright==1.46.0
 agentql==1.0.1
 flask==3.0.3
 python-dotenv==1.0.1
-pyyaml==6.0.2
